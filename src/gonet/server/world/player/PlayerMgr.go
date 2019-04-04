@@ -1,18 +1,16 @@
 package player
 
 import (
-	"gonet/actor"
-	"gonet/db"
-	"fmt"
-	"gonet/base"
-	"gonet/message/json3"
-	"gonet/server/common"
-	"strings"
 	"database/sql"
+	"fmt"
+	"gonet/actor"
+	"gonet/base"
+	"gonet/db"
 	"gonet/message"
+	"gonet/server/common"
 	"gonet/server/world"
+	"strings"
 	"sync"
-	"github.com/golang/protobuf/proto"
 )
 //********************************************************
 // 玩家管理
@@ -200,20 +198,12 @@ func (this *PlayerMgr) PacketFunc(id int, buff []byte) bool{
 			if (nType == base.RPC_Int64 || nType == base.RPC_UInt64 || nType == base.RPC_PInt64 || nType == base.RPC_PUInt64){
 				nAccountId := bitstream.ReadInt64(base.Bit64)
 				SendToPlayer(nAccountId, io)
-			}else if (nType == base.RPC_PB){
+			}else if (nType == base.RPC_MESSAGE){
 				packet := message.GetPakcetByName(funcName)
 				nLen := bitstream.ReadInt(base.Bit32)
 				packetBuf := bitstream.ReadBits(nLen << 3)
 				message.UnmarshalText(packet, packetBuf)
 				packetHead := message.GetPakcetHead(packet)
-				nAccountId := int64(*packetHead.Id)
-				SendToPlayer(nAccountId, io)
-			}else if (nType == base.RPC_JSON){
-				packet := json3.GetPakcetByName(funcName)
-				nLen := bitstream.ReadInt(base.Bit32)
-				packetBuf := bitstream.ReadBits(nLen << 3)
-				json3.UnmarshalText(packet, packetBuf)
-				packetHead := json3.GetPakcetHead(packet)
 				nAccountId := packetHead.Id
 				SendToPlayer(nAccountId, io)
 			}
@@ -224,7 +214,7 @@ func (this *PlayerMgr) PacketFunc(id int, buff []byte) bool{
 }
 
 //--------------发送给客户端----------------------//
-func SendToClient(AccountId int64, packet proto.Message){
+func SendToClient(AccountId int64, packet message.Message){
 	pPlayer := PLAYERMGR.GetPlayer(AccountId)
 	if pPlayer != nil{
 		 world.SendToClient(pPlayer.SocketId, packet)

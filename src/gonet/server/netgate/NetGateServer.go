@@ -1,8 +1,8 @@
  package netgate
 
  import (
+	 "encoding/json"
 	 "gonet/base"
-	 "github.com/golang/protobuf/proto"
 	 "gonet/message"
 	 "gonet/network"
 	 "gonet/server/common"
@@ -148,8 +148,8 @@ func (this *ServerMgr) OnServerStart(){
 	this.m_pService.Start()
 }
 
-func SendToClient(socketId int, packet proto.Message){
-	buff, err := proto.Marshal(packet)
+func SendToClient(socketId int, packet message.Message){
+	buff, err := json.Marshal(packet)
 	if err == nil {
 		SERVER.GetServer().SendByID(socketId, buff)
 	}

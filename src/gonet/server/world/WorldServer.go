@@ -2,7 +2,6 @@
 
  import (
 	 "database/sql"
-	 "github.com/golang/protobuf/proto"
 	 "gonet/base"
 	 "gonet/db"
 	 "gonet/message"
@@ -161,7 +160,7 @@ func (this *ServerMgr) GetAccountSocket() *network.ClientSocket{
 }
 
 //发送给客户端
-func SendToClient(socketId int, packet proto.Message){
+func SendToClient(socketId int, packet message.Message){
 	buff := message.Encode(packet)
 	nLen := len(buff) + 128
 	pakcetHead := message.GetPakcetHead(packet)
@@ -170,7 +169,7 @@ func SendToClient(socketId int, packet proto.Message){
 		bitstream.WriteString(message.GetMessageName(packet))
 		//服务器标示
 		bitstream.WriteInt(int(message.SERVICE_WORLDSERVER), 8)
-		bitstream.WriteInt64(*pakcetHead.Id, base.Bit64)
+		bitstream.WriteInt64(pakcetHead.Id, base.Bit64)
 		bitstream.WriteBits(len(buff)<<3, buff)
 		SERVER.GetServer().SendByID(socketId, bitstream.GetBuffer())
 	}

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"gonet/db"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"gonet/message"
 	"gonet/server/common"
 	"gonet/server/world"
@@ -45,21 +44,21 @@ func (this* Player) Init(num int){
 		PlayerDataList := make([]*message.PlayerData, len(PlayerSimpleList))
 		this.PlayerIdList = []int64{}
 		for i, v := range PlayerSimpleList{
-			PlayerDataList[i] = &message.PlayerData{PlayerID:proto.Int64(v.PlayerId), PlayerName:proto.String(v.PlayerName),PlayerGold:proto.Int32(int32(v.Gold))}
+			PlayerDataList[i] = &message.PlayerData{PlayerID:v.PlayerId, PlayerName:v.PlayerName,PlayerGold:int32(v.Gold)}
 			this.PlayerIdList = append(this.PlayerIdList, v.PlayerId)
 		}
 
 		this.m_Log.Println("玩家登录成功")
 		this.SocketId = socketId
-		world.SendToClient(socketId, &message.W_C_SelectPlayerResponse{PacketHead: message.BuildPacketHead( this.AccountId,  int(message.SERVICE_CLIENT)),
-			AccountId:proto.Int64(this.AccountId),
+		world.SendToClient(socketId, &message.W_C_SelectPlayerResponse{MessageBase: *message.BuildMessageBase( this.AccountId,  int(message.SERVICE_CLIENT), "W_C_SelectPlayerResponse"),
+			AccountId:this.AccountId,
 			PlayerData:PlayerDataList,
 		})
 	})
 
 	//玩家登录到游戏
 	this.RegisterCall("C_W_Game_LoginRequset", func(packet *message.C_W_Game_LoginRequset) {
-		nPlayerId := packet.GetPlayerId()
+		nPlayerId := packet.PlayerId
 		if !this.SetPlayerId(nPlayerId){
 			this.m_Log.Printf("帐号[%d]登入的玩家[%d]不存在", this.AccountId, nPlayerId)
 		}
@@ -80,13 +79,13 @@ func (this* Player) Init(num int){
 					err := rs.Row().Int("@err")
 					//register
 					if(err == 0) {
-						world.SERVER.GetAccountSocket().SendMsg("W_A_CreatePlayer", this.AccountId, packet.GetPlayerName(), packet.GetSex(), this.GetSocketId())
+						world.SERVER.GetAccountSocket().SendMsg("W_A_CreatePlayer", this.AccountId, packet.PlayerName, packet.Sex, this.GetSocketId())
 					}else{
 						this.m_Log.Printf("账号[%d]创建玩家上限", this.AccountId)
 						world.SendToClient(this.GetSocketId(), &message.W_C_CreatePlayerResponse{
-							PacketHead:message.BuildPacketHead(this.AccountId, 0 ),
-							Error:proto.Int32(int32(err)),
-							PlayerId:proto.Int64(0),
+							MessageBase:*message.BuildMessageBase(this.AccountId, 0, "W_C_CreatePlayerResponse"),
+							Error:int32(err),
+							PlayerId:0,
 						})
 					}
 				}
@@ -105,9 +104,9 @@ func (this* Player) Init(num int){
 		}
 
 		world.SendToClient(socketId, &message.W_C_CreatePlayerResponse{
-			PacketHead:message.BuildPacketHead(this.AccountId, 0 ),
-			Error:proto.Int32(int32(err)),
-			PlayerId:proto.Int64(playerId),
+			MessageBase:*message.BuildMessageBase(this.AccountId, 0 , "W_C_CreatePlayerResponse"),
+			Error:int32(err),
+			PlayerId:playerId,
 		})
 	})
 

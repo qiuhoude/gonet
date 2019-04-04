@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"gonet/base"
-	"github.com/golang/protobuf/proto"
 	"gonet/message"
 	"gonet/network"
 )
@@ -82,7 +81,7 @@ func (this *ServerMgr) GetServerMgr() *ServerSocketManager{
 	return this.m_pServerMgr
 }
 
-func SendToClient(socketId int, packet proto.Message){
+func SendToClient(socketId int, packet message.Message){
 	bitstream := base.NewBitStream(make([]byte, 1024), 1024)
 	if !message.GetMessagePacket(packet, bitstream) {
 		return

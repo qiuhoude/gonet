@@ -3,7 +3,6 @@ package account
 import (
 	"database/sql"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"gonet/actor"
 	"gonet/base"
 	"gonet/db"
@@ -27,10 +26,10 @@ func (this *EventProcess) Init(num int) {
 	this.m_db = SERVER.GetDB()
 	//创建账号
 	this.RegisterCall("C_A_RegisterRequest", func(packet *message.C_A_RegisterRequest) {
-		accountName := packet.GetAccountName()
+		accountName := packet.AccountName
 		//password := *packet.Password
 		password := "123456"
-		socketId := int(packet.GetSocketId())
+		socketId := int(packet.SocketId)
 		Error := 1
 		var result string
 		var accountId int64
@@ -53,8 +52,8 @@ func (this *EventProcess) Init(num int) {
 
 		if Error != 0 {
 			SendToClient(this.GetSocketId(), &message.A_C_RegisterResponse{
-				PacketHead: message.BuildPacketHead( accountId, 0),
-				Error:      proto.Int32(int32(Error)),
+				MessageBase:*(message.BuildMessageBase(accountId, 0, "A_C_RegisterResponse")),
+				Error:      int32(Error),
 				SocketId:packet.SocketId,
 			})
 		}
@@ -62,11 +61,11 @@ func (this *EventProcess) Init(num int) {
 
 	//登录账号
 	this.RegisterCall("C_A_LoginRequest", func(packet *message.C_A_LoginRequest) {
-		accountName := packet.GetAccountName()
+		accountName := packet.AccountName
 		//password := *packet.Password
 		password := "123456"
-		buildVersion := packet.GetBuildNo()
-		socketId := int(packet.GetSocketId())
+		buildVersion := packet.BuildNo
+		socketId := int(packet.SocketId)
 		error := base.NONE_ERROR
 
 		if base.CVERSION().IsAcceptableBuildVersion(buildVersion) {
@@ -95,8 +94,8 @@ func (this *EventProcess) Init(num int) {
 
 		if error != base.NONE_ERROR {
 			SendToClient(this.GetSocketId(), &message.A_C_LoginRequest{
-				PacketHead:message.BuildPacketHead( 0, 0 ),
-				Error:proto.Int32(int32(error)),
+				MessageBase:*message.BuildMessageBase( 0, 0, "A_C_LoginRequest"),
+				Error:int32(error),
 				SocketId:packet.SocketId,
 				AccountName:packet.AccountName,
 			})

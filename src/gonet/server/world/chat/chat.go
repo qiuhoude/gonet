@@ -2,7 +2,6 @@ package chat
 
 import (
 	"gonet/actor"
-	"github.com/golang/protobuf/proto"
 	"gonet/message"
 	"gonet/server/world"
 	player2 "gonet/server/world/player"
@@ -69,8 +68,8 @@ func (this *ChatMgr) Init(num int) {
 	this.m_channelManager.Init()
 	//聊天信息
 	this.RegisterCall("C_W_ChatMessage", func(packet *message.C_W_ChatMessage){
-		playerId := packet.GetSender()
-		accountId := packet.GetPacketHead().GetId()
+		playerId := packet.Sender
+		accountId := packet.MessageBase.Ipacket().Id
 		if accountId == 0{
 			return
 		}
@@ -78,9 +77,9 @@ func (this *ChatMgr) Init(num int) {
 		msg := &ChatMessage{}
 		msg.Sender = playerId
 		msg.SenderName = player2.PLAYERSIMPLEMGR.GetPlayerName(msg.Sender)
-		msg.Message = packet.GetMessage()
-		msg.Recver = packet.GetRecver()
-		msg.MessageType = int8(packet.GetMessageType())
+		msg.Message = packet.Message
+		msg.Recver = packet.Recver
+		msg.MessageType = int8(packet.MessageType)
 		msg.RecverName = player2.PLAYERSIMPLEMGR.GetPlayerName(msg.Recver)
 		//替换屏蔽字库
 		//data.ReplaceBanWord(msg.Message, "*")
@@ -157,13 +156,13 @@ func (this *ChatMgr) SendMessageTo(chat *ChatMessage, playerId int64){
 
 func SendMessage(chat *ChatMessage, player *player){
 	world.SendToClient(player.sockeId, &message.W_C_ChatMessage{
-		PacketHead:message.BuildPacketHead(player.accountId, int(message.SERVICE_CLIENT)),
-		Sender:proto.Int64(chat.Sender),
-		SenderName:proto.String(chat.SenderName),
-		Recver:proto.Int64(chat.Recver),
-		RecverName:proto.String(chat.RecverName),
-		MessageType:proto.Int32(int32(chat.MessageType)),
-		Message:proto.String(chat.Message),
+		MessageBase:*message.BuildMessageBase(player.accountId, int(message.SERVICE_CLIENT), "W_C_ChatMessage"),
+		Sender:chat.Sender,
+		SenderName:chat.SenderName,
+		Recver:chat.Recver,
+		RecverName:chat.RecverName,
+		MessageType:int32(chat.MessageType),
+		Message:chat.Message,
 	})
 }
 

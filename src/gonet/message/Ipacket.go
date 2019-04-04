@@ -1,97 +1,112 @@
 package message
 
 import (
-	"fmt"
-	"reflect"
-	"github.com/golang/protobuf/proto"
+	"encoding/json"
 	"gonet/base"
-	"strings"
 	"log"
+	"reflect"
+	"strings"
 )
 
+type SERVICE int32
+
+const (
+	SERVICE_NONE          SERVICE = 0
+	SERVICE_CLIENT        SERVICE = 1
+	SERVICE_GATESERVER    SERVICE = 2
+	SERVICE_ACCOUNTSERVER SERVICE = 3
+	SERVICE_WORLDSERVER   SERVICE = 4
+	SERVICE_MONITORSERVER SERVICE = 5
+)
+
+type CHAT int32
+const (
+	CHAT_MSG_TYPE_WORLD   CHAT = 0
+	CHAT_MSG_TYPE_PRIVATE CHAT = 1
+	CHAT_MSG_TYPE_ORG     CHAT = 2
+	CHAT_MSG_TYPE_COUNT   CHAT = 3
+)
+
+const Default_Ipacket_Stx int32 = 39
+const Default_Ipacket_Ckx int32 = 114
+
+type(
+	Ipacket struct {
+		Stx              int32 `json:"Stx,omitempty"`
+		DestServerType   int32 `json:"DestServerType,omitempty"`
+		Ckx              int32 `json:"Ckx,omitempty"`
+		Id               int64 `json:"Id,omitempty"`
+	}
+
+	MessageBase struct {
+		PacketHead       Ipacket `json:"PacketHead"`
+		MessageName 	 string  `json:"PacketName"`
+	}
+
+	Message interface {
+		Name() string
+		//Reset()
+		//String() string
+		//ProtoMessage()
+		SetName(string)
+		Ipacket() *Ipacket
+	}
+)
+
+func (this *MessageBase) Name() string{
+	return this.MessageName
+}
+
+/*func (this *MessageBase) Reset(){
+}
+
+func (this *MessageBase) ProtoMessage(){
+}
+
+func (this *MessageBase) String()string{
+	return "json"
+}*/
+
+func (this *MessageBase) SetName(name string){
+	this.MessageName = name
+}
+
+func (this *MessageBase) Ipacket() *Ipacket{
+	return &this.PacketHead
+}
+
 var(
-	Packet_CreateFactorStringMap map[string] func()proto.Message
-	Packet_CreateFactorMap map[uint32] func()proto.Message
+	Packet_CreateFactorStringMap map[string] func()Message
+	Packet_CreateFactorMap map[uint32] func()Message
 	Packet_CreateFactorInit bool
 )
 
-func parseTypeElem(val reflect.Value, packetHead **Ipacket) {
-	sType := strings.ToLower(val.Type().String())
-	index := strings.Index(sType, ".")
-	if index!= -1{
-		sType = sType[:index]
-	}
-
-	switch sType {
-	case "*message":
-		if !val.IsNil(){
-			value := val.Elem().Interface()
-			parseTypeStruct(value, packetHead)
-		}
-	}
+func GetPakcetHead(packet Message) *Ipacket{
+	return packet.Ipacket()
 }
 
-func setPacketHead(packetHead **Ipacket, TypeName string, protoVal reflect.Value) bool{
-	if TypeName == "PacketHead"{
-		*packetHead = protoVal.Interface().(*Ipacket)
-	}else{
-		return false
-	}
-
-	return true
-}
-
-func parseTypeStruct(message interface{}, packetHead **Ipacket) {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("GetPakcetHead", err)
-		}
-	}()
-
-	protoType := reflect.TypeOf(message)
-	protoVal := reflect.ValueOf(message)
-	if protoType.Kind() == reflect.Ptr {
-		protoType = reflect.TypeOf(message).Elem()
-		protoVal = reflect.ValueOf(message).Elem()
-	}
-
-	for i := 0; i < protoType.NumField(); i++{
-		if !setPacketHead(packetHead, protoType.Field(i).Name, protoVal.Field(i)){
-			parseTypeElem(protoVal.Field(i), packetHead)
-		}else{
-			break
-		}
-	}
-}
-
-func GetPakcetHead(message interface{}) *Ipacket{
-	packetHead := BuildPacketHead( 0, 0)
-	parseTypeStruct(message, &packetHead)
-	return packetHead
+func BuildMessageBase(id int64, destservertype int, packetName string) *MessageBase{
+	packetName = strings.ToLower(packetName)
+	return &MessageBase{*BuildPacketHead(id, destservertype), packetName}
 }
 
 func BuildPacketHead(id int64, destservertype int) *Ipacket{
 	ipacket := &Ipacket{
-		Stx:	proto.Int32(Default_Ipacket_Stx),
-		DestServerType:	proto.Int32(int32(destservertype)),
-		Ckx:	proto.Int32(Default_Ipacket_Ckx),
-		Id:	proto.Int64(id),
+		Stx:	Default_Ipacket_Stx,
+		DestServerType:	int32(destservertype),
+		Ckx:	Default_Ipacket_Ckx,
+		Id:	  id,
 	}
 	return ipacket
 }
 
-func GetMessageName(packet proto.Message) string{
-	sType := strings.ToLower(proto.MessageName(packet))
-	index := strings.Index(sType, ".")
-	if index!= -1{
-		sType = sType[index+1:]
-	}
-	return sType
+func GetMessageName(packet Message) string{
+	return 	strings.ToLower(packet.Name())
 }
 
-func Encode(packet proto.Message) []byte{
+func Encode(packet Message) []byte{
 	packetId := base.GetMessageCode1(GetMessageName(packet))
-	buff,_ := proto.Marshal(packet)
+	buff,_ := json.Marshal(packet)
 	data := append(base.IntToBytes(int(packetId)), buff...)
 	return data
 }
@@ -101,7 +116,7 @@ func Decode(buff []byte) (uint32, []byte){
 	return packetId, buff[4:]
 }
 
-func GetMessagePacket(packet proto.Message, bitstream *base.BitStream) bool {
+func GetMessagePacket(packet Message, bitstream *base.BitStream) bool {
 	bitstream.WriteString(GetMessageName(packet))
 	bitstream.WriteInt(1, 8)
 	{
@@ -112,8 +127,8 @@ func GetMessagePacket(packet proto.Message, bitstream *base.BitStream) bool {
 		}
 		switch sType {
 		case "*message":
-			bitstream.WriteInt(base.RPC_PB, 8)
-			buf, _ :=proto.Marshal(packet)
+			bitstream.WriteInt(base.RPC_MESSAGE, 8)
+			buf, _ := json.Marshal(packet)
 			nLen := len(buf)
 			bitstream.WriteInt(nLen, base.Bit32)
 			bitstream.WriteBits(nLen << 3, buf)
@@ -125,10 +140,11 @@ func GetMessagePacket(packet proto.Message, bitstream *base.BitStream) bool {
 	return true
 }
 
-func RegisterPacket(packet proto.Message) {
+func RegisterPacket(packet Message) {
 	packetName := GetMessageName(packet)
-	packetFunc := func() proto.Message{
-		packet := reflect.New(reflect.ValueOf(packet).Elem().Type()).Interface().(proto.Message)
+	packetFunc := func() Message{
+		packet := reflect.New(reflect.ValueOf(packet).Elem().Type()).Interface().(Message)
+		packet.SetName(packetName)
 		return packet
 	}
 
@@ -136,29 +152,25 @@ func RegisterPacket(packet proto.Message) {
 	Packet_CreateFactorMap[base.GetMessageCode1(packetName)] = packetFunc
 }
 
-func GetPakcet(packetId uint32) proto.Message{
+func GetPakcet(packetId uint32) Message{
 	if !Packet_CreateFactorInit{
-		Packet_CreateFactorStringMap = make(map[string] func()proto.Message)
-		Packet_CreateFactorMap 		 = make(map[uint32] func()proto.Message)
+		Packet_CreateFactorStringMap = make(map[string] func()Message)
+		Packet_CreateFactorMap 		 = make(map[uint32] func()Message)
 
 		//注册消息
-		RegisterPacket(&C_A_LoginRequest{})
-		RegisterPacket(&C_A_RegisterRequest{})
-		RegisterPacket(&C_G_LogoutResponse{})
-		RegisterPacket(&C_W_CreatePlayerRequest{})
-		RegisterPacket(&C_W_Game_LoginRequset{})
-		RegisterPacket(&C_W_LoginCopyMap{})
-		RegisterPacket(&C_W_Move{})
-		RegisterPacket(&C_W_ChatMessage{})
+		RegisterPacket(&C_A_LoginRequest{MessageBase:MessageBase{Ipacket{}, "C_A_LoginRequest"},})
+		RegisterPacket(&C_A_RegisterRequest{MessageBase:MessageBase{Ipacket{}, "C_A_RegisterRequest"},})
+		RegisterPacket(&C_G_LogoutResponse{MessageBase:MessageBase{Ipacket{}, "C_G_LogoutResponse"},})
+		RegisterPacket(&C_W_CreatePlayerRequest{MessageBase:MessageBase{Ipacket{}, "C_W_CreatePlayerRequest"},})
+		RegisterPacket(&C_W_Game_LoginRequset{MessageBase:MessageBase{Ipacket{}, "C_W_Game_LoginRequset"},})
+		RegisterPacket(&C_W_ChatMessage{MessageBase:MessageBase{Ipacket{}, "C_W_ChatMessage"},})
 		// test for client
-		RegisterPacket(&W_C_SelectPlayerResponse{})
-		RegisterPacket(&W_C_CreatePlayerResponse{})
-		RegisterPacket(&W_C_LoginMap{})
-		RegisterPacket(&W_C_Move{})
-		RegisterPacket(&W_C_ADD_SIMOBJ{})
-		RegisterPacket(&A_C_LoginRequest{})
-		RegisterPacket(&A_C_RegisterResponse{})
-		RegisterPacket(&W_C_ChatMessage{})
+		RegisterPacket(&W_C_SelectPlayerResponse{MessageBase:MessageBase{Ipacket{}, "W_C_SelectPlayerResponse"},})
+		RegisterPacket(&W_C_CreatePlayerResponse{MessageBase:MessageBase{Ipacket{}, "W_C_CreatePlayerResponse"},})
+		RegisterPacket(&A_C_LoginRequest{MessageBase:MessageBase{Ipacket{}, "A_C_LoginRequest"},})
+		RegisterPacket(&A_C_RegisterResponse{MessageBase:MessageBase{Ipacket{}, "A_C_RegisterResponse"},})
+		RegisterPacket(&W_C_ChatMessage{MessageBase:MessageBase{Ipacket{}, "W_C_ChatMessage"},})
+		// test for client
 		Packet_CreateFactorInit = true
 	}
 
@@ -170,10 +182,10 @@ func GetPakcet(packetId uint32) proto.Message{
 	return nil;
 }
 
-func GetPakcetByName(packetName string) proto.Message{
+func GetPakcetByName(packetName string) Message{
 	return GetPakcet(base.GetMessageCode1(packetName))
 }
 
-func UnmarshalText(packet proto.Message, packetBuf []byte) error{
-	return proto.Unmarshal(packetBuf, packet)
+func UnmarshalText(packet Message, packetBuf []byte) error{
+	return json.Unmarshal(packetBuf, packet)
 }

@@ -1,9 +1,9 @@
 package netgate
 
 import (
+	"fmt"
 	"gonet/actor"
 	"gonet/base"
-	"fmt"
 	"gonet/message"
 	"gonet/server/common"
 	"strconv"

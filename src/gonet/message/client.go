@@ -1,4 +1,4 @@
-package json3
+package message
 
 type C_A_LoginRequest struct {
 	MessageBase
@@ -69,4 +69,10 @@ type A_C_LoginRequest struct {
 	Error            int32   `protobuf:"varint,2,req,name=Error" json:"Error,omitempty"`
 	SocketId         int32   `protobuf:"varint,3,req,name=SocketId" json:"SocketId,omitempty"`
 	AccountName      string  `protobuf:"bytes,4,req,name=AccountName" json:"AccountName,omitempty"`
+}
+
+type A_C_RegisterResponse struct {
+	MessageBase
+	Error            int32   `protobuf:"varint,2,req,name=Error" json:"Error,omitempty"`
+	SocketId         int32   `protobuf:"varint,3,req,name=SocketId" json:"SocketId,omitempty"`
 }

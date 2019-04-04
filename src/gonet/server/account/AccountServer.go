@@ -2,7 +2,6 @@
 
  import (
 	 "database/sql"
-	 "github.com/golang/protobuf/proto"
 	 "gonet/base"
 	 "gonet/db"
 	 "gonet/message"
@@ -136,7 +135,7 @@ func (this *ServerMgr) GetAccountMgr() *AccountMgr{
 	return this.m_AccountMgr
 }
 
-func SendToClient(socketId int, packet proto.Message){
+func SendToClient(socketId int, packet message.Message){
 	bitstream := base.NewBitStream(make([]byte, 1024), 1024)
 	if !message.GetMessagePacket(packet, bitstream) {
 		return
