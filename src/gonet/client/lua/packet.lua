@@ -1,13 +1,49 @@
 require("crc")
-local protobuf = require "protobuf"
+local json = require ("json")
+--server type
+SERVICE_NONE           = 0
+SERVICE_CLIENT         = 1
+SERVICE_GATESERVER     = 2
+SERVICE_ACCOUNTSERVER  = 3
+SERVICE_WORLDSERVER    = 4
+SERVICE_MONITORSERVER  = 5
+--chat type
+CHAT_MSG_TYPE_WORLD    = 0
+CHAT_MSG_TYPE_PRIVATE  = 1
+CHAT_MSG_TYPE_ORG      = 2
+CHAT_MSG_TYPE_COUNT    = 3
+
+Default_Ipacket_Stx  = 39
+Default_Ipacket_Ckx  = 114
+
 m_PacketCreateMap = {}
 m_PacketMap = {}
+Ipacket = {Stx = 0, DestServerType = 0, Ckx = 0, Id = 0}
+Message = {PacketHead = Ipacket, MessageName=""}
+
+function Message:new(o, id, destservertype, packetName)
+    o = o or {}
+    setmetatable(o, self)
+    self.__index = self
+    self:Init(id, destservertype, packetName)
+    return o
+end
+
+function Message:Init(id, destservertype, packetName)
+    self.PacketHead.Stx = Default_Ipacket_Stx
+    self.PacketHead.DestServerType = destservertype
+    self.PacketHead.Ckx = Default_Ipacket_Ckx
+    self.PacketHead.Id = id
+    self.MessageName = string.lower(packetName)
+    return o
+end
 
 function RegisterPacket(packet, func)
-    name = string.lower(proto.MessageName(packet))
-    id = CRC32.hash("test")
+    name = string.lower(packet.MessageName)
+    id = CRC32.hash(name)
     packetFunc = function()
-    		packet = proto.Clone(packet)
+    		packet = new(packet)
+    		packet:Init(0, 0, name)
     		return packet
     end
     m_PacketCreateMap[id] = packetFunc
@@ -19,11 +55,19 @@ function HandlePacket(dat)
     buff = string.sub(dat, 4)
     packet, bEx = m_PacketCreateMap[id]
     if bEx then
-        proto.Unmarshal(buff, packet)
+        json.decode(buff, packet)
         m_PacketMap[id](packet)
     end
 end
 
+--前四位为包头名
+function Encode(packet)
+    name = string.lower(packet.MessageName)
+    packetId = CRC32.hash(name)
+	buff = json.encode(packet)
+	data = int_to_bytes(packetId) .. buff
+	return data
+end
 
 function bytes_to_int(str,endian,signed) -- use length of string to determine 8,16,32,64 bits
     local t={str:byte(1,-1)}
