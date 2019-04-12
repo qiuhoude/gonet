@@ -80,7 +80,7 @@ func (this *UserPrcoess) PacketFunc(socketid int, buff []byte) bool{
 	packetId, data := message.Decode(buff)
 	packet := message.GetPakcet(packetId)
 	if packet == nil{
-		SERVER.GetLog().Printf("包解析错误1  socket=%d", socketid)
+		//SERVER.GetLog().Printf("包解析错误1  socket=%d", socketid)
 		return false
 	}
 
