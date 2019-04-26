@@ -12,7 +12,7 @@ websocket模式下，要在net，websocket注视掉如下代码：https://studyg
     前四位 protobuf name 的 crc，中间protobuf字节流， 尾部+结束标志💞♡ (结束标志也可以自己定义在base.TCP_END控制)
     //另外支持包头大小- 前四位包体大小,再四位protobuf name 的 crc，中间protobuf字节流,代码注视掉,（搜索tcp粘包固定包头）
 
-1.支持go mod, gopath可以不需要设置。（也支持go vendor（删除项目下的go.mod文件），下载三个基础库，mysql，protobuf，redis）
+1.支持go mod, gopath可以不需要设置。（也支持go vendor（删除项目下的go.mod文件,注意go mod不成熟建议用vendor，go mod包管理会下载一个包的全部，vendor是用那个下那个，只有一部分），下载三个基础库，mysql，protobuf，redis）
 
 // go get github.com/golang/net
 
@@ -20,13 +20,17 @@ websocket模式下，要在net，websocket注视掉如下代码：https://studyg
 
 // go get github.com/gomodule/redigo/redis
 
-2.bin目录下的sxz_server.cfg配置数据库以及端口
+// go get go.etcd.io/etcd/client
 
-3.数据库在sql文件目录下生产
+2.下载etcd做服发现（new），（redis做排行榜，全局缓存，可选）
 
-4.win下执行build.bat,start.bat
+3.bin目录下的sxz_server.cfg配置数据库以及端口
 
-5.linux下执行build.sh,start.sh
+4.数据库在sql文件目录下生产
+
+5.win下执行build.bat,start.bat
+
+6.linux下执行build.sh,start.sh
 
 有问题可以加qq群：950288306
 

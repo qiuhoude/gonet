@@ -1,72 +1,54 @@
 require("crc")
-local json = require ("json")
---server type
-SERVICE_NONE           = 0
-SERVICE_CLIENT         = 1
-SERVICE_GATESERVER     = 2
-SERVICE_ACCOUNTSERVER  = 3
-SERVICE_WORLDSERVER    = 4
-SERVICE_MONITORSERVER  = 5
---chat type
-CHAT_MSG_TYPE_WORLD    = 0
-CHAT_MSG_TYPE_PRIVATE  = 1
-CHAT_MSG_TYPE_ORG      = 2
-CHAT_MSG_TYPE_COUNT    = 3
-
-Default_Ipacket_Stx  = 39
-Default_Ipacket_Ckx  = 114
-
+local pb = require "pb"
+local protoc = require "protoc"
 m_PacketCreateMap = {}
 m_PacketMap = {}
-Ipacket = {Stx = 0, DestServerType = 0, Ckx = 0, Id = 0}
-Message = {PacketHead = Ipacket, MessageName=""}
 
-function Message:new(o, id, destservertype, packetName)
-    o = o or {}
-    setmetatable(o, self)
-    self.__index = self
-    self:Init(id, destservertype, packetName)
-    return o
+
+-- 加载pb
+assert(pb.loadfile "./../../message/pb/message.pb")
+assert(pb.loadfile "./../../message/pb/game.pb")
+assert(pb.loadfile "./../../message/pb/client.pb")
+
+--创建包头
+function BuildPacketHead(id, destservertype)
+    return{
+         Stx = 0x27,
+         DestServerType = destservertype,
+         Ckx=0x72,
+         Id = id
+    }
 end
 
-function Message:Init(id, destservertype, packetName)
-    self.PacketHead.Stx = Default_Ipacket_Stx
-    self.PacketHead.DestServerType = destservertype
-    self.PacketHead.Ckx = Default_Ipacket_Ckx
-    self.PacketHead.Id = id
-    self.MessageName = string.lower(packetName)
-    return o
-end
-
-function RegisterPacket(packet, func)
-    name = string.lower(packet.MessageName)
+--包处理回调函数
+function RegisterPacket(packetName, func)
+    name = string.lower(packetName)
     id = CRC32.hash(name)
-    packetFunc = function()
-    		packet = new(packet)
-    		packet:Init(0, 0, name)
-    		return packet
-    end
-    m_PacketCreateMap[id] = packetFunc
+    m_PacketCreateMap[id] = "message." .. packetName
     m_PacketMap[id] = func
 end
 
+--处理包函数
 function HandlePacket(dat)
     id = bytes_to_int(string.sub(dat, 0, 4))
-    buff = string.sub(dat, 4)
-    packet, bEx = m_PacketCreateMap[id]
-    if bEx then
-        json.decode(buff, packet)
+    buff = string.sub(dat, 5)
+    packetName = m_PacketCreateMap[id]
+    if packetName ~= nil then
+        local packet = pb.decode(packetName, buff)
         m_PacketMap[id](packet)
     end
 end
 
---前四位为包头名
-function Encode(packet)
-    name = string.lower(packet.MessageName)
-    packetId = CRC32.hash(name)
-	buff = json.encode(packet)
-	data = int_to_bytes(packetId) .. buff
-	return data
+--发送包函数
+function SendPacket(name, packet)
+    name = string.lower(name)
+    id = CRC32.hash(name)
+    packetName = m_PacketCreateMap[id]
+    if packetName ~= nil then
+        local bytes = pb.encode(packetName, packet)
+        bytes = int_to_bytes(id) .. bytes .. TCP_END
+        CLIENTSOCKET:Send(bytes)
+    end
 end
 
 function bytes_to_int(str,endian,signed) -- use length of string to determine 8,16,32,64 bits
@@ -108,5 +90,23 @@ function int_to_bytes(num,endian,signed)
         end
         res=t
     end
-    return string.char(unpack(res))
+    return string.char(table.unpack(res))
 end
+
+ -- lua table data
+ local data = {
+    PacketHead = {
+         Stx = 0x27,
+         DestServerType = 2,
+         Ckx=0x72,
+         Id = 0
+    },
+    Sender = 1000,
+    SenderName = "test"
+ }
+
+ --local bytes = assert(pb.encode("message.W_C_ChatMessage", data))
+ --print(pb.type("message.W_C_ChatMessage"))
+ -- encode lua table data into binary format in lua string and return
+ --local data2 = assert(pb.decode("message.W_C_ChatMessage", bytes))
+ --print(require "serpent".block(data2))

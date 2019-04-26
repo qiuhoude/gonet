@@ -8,6 +8,7 @@
 	 "gonet/network"
 	 "gonet/rd"
 	 "gonet/server/common"
+	 "gonet/server/common/cluster"
 	 "log"
  )
 
@@ -21,6 +22,7 @@ type(
 		m_Inited bool
 		m_config base.Config
 		m_Log	base.CLog
+		m_Cluster *cluster.Service
 	}
 
 	IServerMgr interface{
@@ -48,6 +50,7 @@ var(
 	SERVER ServerMgr
 	RdID int
 	OpenRedis bool
+	EtcdEndpoints []string
 )
 
 func (this *ServerMgr)Init() bool{
@@ -67,6 +70,7 @@ func (this *ServerMgr)Init() bool{
 	this.m_Log.Init("world")
 	//初始ini配置文件
 	this.m_config.Read("SXZ_SERVER.CFG")
+	EtcdEndpoints = this.m_config.Get5("Etcd_Cluster", ",")
 	UserNetIP, UserNetPort 	= this.m_config.Get2("World_LANAddress", ":")
 	AccountServerIp, AccountServerPort 	= this.m_config.Get2("Account_LANAddress", ":")
 	DB_Server 	= this.m_config.Get("ActorDB_LANIP")
@@ -130,6 +134,7 @@ func (this *ServerMgr)Init() bool{
 	this.m_pService.BindPacketFunc(packet.PacketFunc)
 	this.m_pService.BindPacketFunc(this.m_pServerMgr.PacketFunc)
 
+	this.m_Cluster = cluster.NewService(int(message.SERVICE_WORLDSERVER), UserNetIP, base.Int(UserNetPort), EtcdEndpoints)
 	return  false
 }
 
