@@ -78,12 +78,6 @@ func getTypeString(classField reflect.StructField, classVal reflect.Value) strin
 }
 
 func parseType(bitstream *BitStream, classField reflect.StructField, val reflect.Value) bool {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("parseType", err)
-		}
-	}()
-
 	sType := getTypeString(classField, val)
 	switch sType {
 	case "*bool":
@@ -711,6 +705,11 @@ func parseType(bitstream *BitStream, classField reflect.StructField, val reflect
 }
 
 func parseMessage(bitstream *BitStream, message interface{}) bool{
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("parseBType", err)
+		}
+	}()
 	var protoVal reflect.Value
 	protoType := reflect.TypeOf(message)
 	if protoType.Kind() == reflect.Ptr {
@@ -732,6 +731,11 @@ func parseMessage(bitstream *BitStream, message interface{}) bool{
 }
 
 func parseBMessage(bitstream *BitStream, message interface{}) bool {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("parseBType", err)
+		}
+	}()
 	var protoVal reflect.Value
 	protoType := reflect.TypeOf(message)
 	if protoType.Kind() == reflect.Ptr {
@@ -753,11 +757,6 @@ func parseBMessage(bitstream *BitStream, message interface{}) bool {
 }
 
 func parseBType(bitstream *BitStream, classField reflect.StructField, val reflect.Value) bool{
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("parseBType", err)
-		}
-	}()
 	sType := getTypeString(classField, val)
 	switch sType {
 	case "*bool":
@@ -828,74 +827,102 @@ func parseBType(bitstream *BitStream, classField reflect.StructField, val reflec
 
 	case "[]bool":
 		nLen := bitstream.ReadInt(16)
+		value := make([]bool, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(bitstream.ReadFlag())))
+			value[i] = bitstream.ReadFlag()
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]float64":
 		nLen := bitstream.ReadInt(16)
+		value := make([]float64, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(bitstream.ReadFloat64())))
+			value[i] = float64(bitstream.ReadFloat64())
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]float32":
 		nLen := bitstream.ReadInt(16)
+		value := make([]float32, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(bitstream.ReadFloat())))
+			value[i] = float32(bitstream.ReadFloat())
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]int8":
 		nLen := bitstream.ReadInt(16)
+		value := make([]int8, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(int8(bitstream.ReadInt(8)))))
+			value[i] = int8(bitstream.ReadInt(8))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]uint8":
 		nLen := bitstream.ReadInt(16)
+		value := make([]uint8, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(uint8(bitstream.ReadInt(8)))))
+			value[i] = uint8(bitstream.ReadInt(8))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]int16":
 		nLen := bitstream.ReadInt(16)
+		value := make([]int16, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(int16(bitstream.ReadInt(16)))))
+			value[i] = int16(bitstream.ReadInt(16))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]uint16":
 		nLen := bitstream.ReadInt(16)
+		value := make([]uint16, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(uint16(bitstream.ReadInt(16)))))
+			value[i] = uint16(bitstream.ReadInt(16))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]int32":
 		nLen := bitstream.ReadInt(16)
+		value := make([]int32, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(int32(bitstream.ReadInt(32)))))
+			value[i] = int32(bitstream.ReadInt(32))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]uint32":
 		nLen := bitstream.ReadInt(16)
+		value := make([]uint32, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(uint32(bitstream.ReadInt(32)))))
+			value[i] = uint32(bitstream.ReadInt(32))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]int64":
 		nLen := bitstream.ReadInt(16)
+		value := make([]int64, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(int64(bitstream.ReadInt64(64)))))
+			value[i] = int64(bitstream.ReadInt64(64))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]uint64":
 		nLen := bitstream.ReadInt(16)
+		value := make([]uint64, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(uint64(bitstream.ReadInt64(64)))))
+			value[i] = uint64(bitstream.ReadInt64(64))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]string":
 		nLen := bitstream.ReadInt(16)
+		value := make([]string, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(bitstream.ReadString())))
+			value[i] = bitstream.ReadString()
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]int":
 		nLen := bitstream.ReadInt(16)
+		value := make([]int, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(bitstream.ReadInt(32))))
+			value[i] = bitstream.ReadInt(32)
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]uint":
 		nLen := bitstream.ReadInt(16)
+		value := make([]uint, nLen)
 		for i := 0; i < nLen; i++ {
-			val.Set( reflect.Append(val, reflect.ValueOf(uint(bitstream.ReadInt(32)))))
+			value[i] = uint(bitstream.ReadInt(32))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]struct"://no support
 		value1 := val.Elem().Interface().([]interface{})
 		nLen := bitstream.ReadInt(16)
@@ -905,88 +932,116 @@ func parseBType(bitstream *BitStream, classField reflect.StructField, val reflec
 
 	case "[]*bool":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*bool, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := bitstream.ReadFlag()
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(bool)
+			*value[i] = bitstream.ReadFlag()
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*float64":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*float64, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := bitstream.ReadFloat64()
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(float64)
+			*value[i] = bitstream.ReadFloat64()
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*float32":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*float32, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := bitstream.ReadFloat()
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(float32)
+			*value[i] = bitstream.ReadFloat()
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*int8":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*int8, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := int8(bitstream.ReadInt(8))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(int8)
+			*value[i] = int8(bitstream.ReadInt(8))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*uint8":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*uint8, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := uint8(bitstream.ReadInt(8))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(uint8)
+			*value[i] = uint8(bitstream.ReadInt(8))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*int16":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*int16, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := int16(bitstream.ReadInt(16))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(int16)
+			*value[i] = int16(bitstream.ReadInt(16))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*uint16":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*uint16, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := uint16(bitstream.ReadInt(16))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(uint16)
+			*value[i] = uint16(bitstream.ReadInt(16))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*int32":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*int32, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := int32(bitstream.ReadInt(32))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(int32)
+			*value[i] = int32(bitstream.ReadInt(32))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*uint32":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*uint32, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := uint32(bitstream.ReadInt(32))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(uint32)
+			*value[i] = uint32(bitstream.ReadInt(32))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*int64":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*int64, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := int64(bitstream.ReadInt64(64))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(int64)
+			*value[i] = int64(bitstream.ReadInt64(64))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*uint64":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*uint64, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := uint64(bitstream.ReadInt64(64))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(uint64)
+			*value[i] = uint64(bitstream.ReadInt64(64))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*string":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*string, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := bitstream.ReadString()
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(string)
+			*value[i] = bitstream.ReadString()
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*int":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*int, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := int(bitstream.ReadInt(32))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(int)
+			*value[i] = bitstream.ReadInt(32)
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*uint":
 		nLen := bitstream.ReadInt(16)
+		value := make([]*uint, nLen)
 		for i := 0; i < nLen; i++ {
-			val1 := uint(bitstream.ReadInt(32))
-			val.Set( reflect.Append(val, reflect.ValueOf(&val1)))
+			value[i]  = new(uint)
+			*value[i] = uint(bitstream.ReadInt(32))
 		}
+		val.Set(reflect.ValueOf(value))
 	case "[]*struct"://no support
 		value1 := val.Elem().Interface().([]interface{})
 		nLen := bitstream.ReadInt(16)
