@@ -14,3 +14,12 @@ base 基础类库
     log日志文件
         服务里面在bin目录下log有各个服务器的log文件,根据时间,每天生成不同的log和err文件
        
+    message文件,结构体注册rpc
+        结构体要调用RegisterMessage注册rpc
+        
+    rpc文件
+        rpc将基础类型转化为字节流
+        
+    uuid文件
+        snowflake,生成64位唯一uuid,告别string——uuid
+        
